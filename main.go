@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"sync/atomic"
@@ -22,8 +22,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
-	mux.HandleFunc("GET /api/metrics", apiCfg.handlerMetrics)
-	mux.HandleFunc("POST /api/reset", apiCfg.handlerReset)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
+	mux.HandleFunc("POST /api/validate_chirp", apiCfg.handlerValidate)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
@@ -35,9 +36,21 @@ func main() {
 }
 
 func (cfg *apiConfig) handlerMetrics(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+
+	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())))
+	metricsTmpl, err := template.ParseFiles("metrics.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = metricsTmpl.Execute(w, struct {
+		Count int32
+	}{
+		Count: cfg.fileserverHits.Load(),
+	})
+	if err != nil {
+		http.Error(w, "Failed to render HTML", http.StatusInternalServerError)
+	}
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
