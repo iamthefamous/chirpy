@@ -119,3 +119,24 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 		Body:      chirp.Body,
 	})
 }
+
+func (cfg *apiConfig) handlerGetUsers(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.db.GetUsers(r.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Can not get users")
+		return
+	}
+
+	resp := make([]Chirp, len(chirps))
+	for i, chirp := range chirps {
+		resp[i] = Chirp{
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, resp)
+}

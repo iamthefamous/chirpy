@@ -10,7 +10,8 @@ VALUES (
 RETURNING *;
 
 -- name: GetUsers :many
-SELECT * FROM chirps;
+SELECT * FROM chirps
+ORDER BY created_at ASC;
 
 -- name: GetUser :one
 SELECT * FROM chirps

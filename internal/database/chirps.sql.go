@@ -61,6 +61,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (Chirp, error) {
 
 const getUsers = `-- name: GetUsers :many
 SELECT id, created_at, updated_at, body, user_id FROM chirps
+ORDER BY created_at ASC
 `
 
 func (q *Queries) GetUsers(ctx context.Context) ([]Chirp, error) {
