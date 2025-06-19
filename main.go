@@ -16,6 +16,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	jwtSecret      string
 }
 
 const filepathRoot = "." // or set to "public" or "static" directory
@@ -42,6 +43,7 @@ func main() {
 	}
 
 	apiPlaform := os.Getenv("PLATFORM")
+	jwtSecret := os.Getenv("JWT_SECRET")
 
 	dbQueries := database.New(db)
 
@@ -49,6 +51,7 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       apiPlaform,
+		jwtSecret:      jwtSecret,
 	}
 
 	mux := http.NewServeMux()
