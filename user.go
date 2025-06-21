@@ -1,9 +1,7 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -57,56 +55,6 @@ func (cfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 	}
 
 	respondWithJSON(w, http.StatusCreated, user)
-}
-
-func (cfg *apiConfig) handlerGetUsers(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.db.GetUsers(r.Context())
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Can not get users")
-		return
-	}
-
-	resp := make([]Chirp, len(chirps))
-	for i, chirp := range chirps {
-		resp[i] = Chirp{
-			ID:        chirp.ID,
-			CreatedAt: chirp.CreatedAt,
-			UpdatedAt: chirp.UpdatedAt,
-			Body:      chirp.Body,
-			UserID:    chirp.UserID,
-		}
-	}
-
-	respondWithJSON(w, http.StatusOK, resp)
-}
-
-func (cfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
-	chirpIDStr := r.PathValue("chirpID")
-
-	chirpID, err := uuid.Parse(chirpIDStr)
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID format")
-		return
-	}
-
-	chirp, err := cfg.db.GetUser(r.Context(), chirpID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			respondWithError(w, http.StatusNotFound, "Chirp not found")
-		} else {
-			respondWithError(w, http.StatusInternalServerError, "Could not retrieve chirp")
-		}
-		return
-	}
-
-	resp := Chirp{
-		ID:        chirp.ID,
-		CreatedAt: chirp.CreatedAt,
-		UpdatedAt: chirp.UpdatedAt,
-		Body:      chirp.Body,
-		UserID:    chirp.UserID,
-	}
-	respondWithJSON(w, http.StatusOK, resp)
 }
 
 func (cfg *apiConfig) HandlerUpdateUser(w http.ResponseWriter, r *http.Request) {
