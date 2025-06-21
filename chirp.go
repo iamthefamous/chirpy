@@ -120,3 +120,45 @@ func (cfg *apiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, http.StatusOK, resp)
 }
+
+func (cfg *apiConfig) HandlerDeleteChirp(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	tokenStr, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, "Missing token")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(tokenStr, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, 403, "Invalid or expired token")
+		return
+	}
+	chirpIDStr := r.PathValue("chirpID")
+
+	chirpID, err := uuid.Parse(chirpIDStr)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID format")
+		return
+	}
+
+	chirp, err := cfg.db.GetChirp(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, 404, "Chirp Not Found")
+		return
+	}
+
+	if chirp.UserID != userID {
+		respondWithError(w, 403, "Forbidden")
+		return
+	}
+
+	err = cfg.db.DeleteChirp(r.Context(), chirpID)
+	if err != nil {
+		respondWithError(w, 404, "Chirp Not Found")
+		return
+	}
+
+	w.WriteHeader(204)
+}
