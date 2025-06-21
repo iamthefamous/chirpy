@@ -108,3 +108,60 @@ func (cfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
 	}
 	respondWithJSON(w, http.StatusOK, resp)
 }
+
+func (cfg *apiConfig) HandlerUpdateUser(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	type request struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	tokenStr, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Missing token")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(tokenStr, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid or expired token")
+		return
+	}
+
+	var req request
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+		return
+	}
+
+	user, err := cfg.db.GetUserByEmail(r.Context(), req.Email)
+	if err == nil {
+		respondWithError(w, http.StatusBadRequest, "Email is already used, try another")
+		return
+	}
+
+	newHashedPasword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Can not change password")
+	}
+
+	err = cfg.db.ChangePasswordAndEmail(r.Context(), database.ChangePasswordAndEmailParams{
+		ID:             userID,
+		Email:          req.Email,
+		HashedPassword: newHashedPasword,
+		UpdatedAt:      time.Now().UTC(),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Can not change password ")
+	}
+
+	resp := User{
+		ID:        userID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: time.Now().UTC(),
+		Email:     req.Email,
+	}
+
+	respondWithJSON(w, 200, resp)
+}

@@ -126,6 +126,8 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) handlerRefresh(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
 	tokenStr, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Missing token")
@@ -149,6 +151,8 @@ func (cfg *apiConfig) handlerRefresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) handlerRevoke(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
 	tokenStr, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "missing token")
