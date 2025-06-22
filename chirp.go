@@ -72,10 +72,20 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 }
 
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
 	chirps, err := cfg.db.GetChirps(r.Context())
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Can not get users")
 		return
+	}
+
+	s := r.URL.Query().Get("author_id")
+	if userID, err := uuid.Parse(s); err == nil {
+		chirps, err = cfg.db.GetChirpsOfUser(r.Context(), userID)
+		if err != nil {
+			respondWithError(w, 404, "User Not Found")
+		}
 	}
 
 	resp := make([]Chirp, len(chirps))
@@ -86,6 +96,15 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: chirp.UpdatedAt,
 			Body:      chirp.Body,
 			UserID:    chirp.UserID,
+		}
+	}
+
+	s = r.URL.Query().Get("sort")
+	if s == "desc" {
+		for i := 0; i < len(resp)/2; i++ {
+			temp := resp[i]
+			resp[i] = resp[len(resp)-1-i]
+			resp[len(resp)-1-i] = temp
 		}
 	}
 
@@ -161,4 +180,7 @@ func (cfg *apiConfig) HandlerDeleteChirp(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.WriteHeader(204)
+}
+
+func (cfg *apiConfig) HandlerGetChirpsOfUser(w http.ResponseWriter, r *http.Request) {
 }
