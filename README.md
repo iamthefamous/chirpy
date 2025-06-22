@@ -1,127 +1,108 @@
-Chirpy: A Minimalist Twitter Clone in Go
+# Chirpy: A Minimalist Twitter Clone in Go
 
 Chirpy is a backend-focused microblogging platform (similar to Twitter) built in Go. It allows users to register, authenticate with secure JWT-based sessions, post chirps (short messages), and manage tokens with a robust refresh/revoke mechanism. The project also features webhook handling, user upgrades, and admin tools.
 
-Features
+---
 
-✅ User Authentication
+## Features
 
-Register/Login with email and password
+### ✅ User Authentication
 
-JWT-based access tokens (1 hour expiry)
+* **Register/Login** with email and password
+* JWT-based **access tokens** (1 hour expiry)
+* **Refresh tokens** with 60-day expiry
+* Secure password hashing using **bcrypt**
 
-Refresh tokens with 60-day expiry
+### ✍️ Chirps (Posts)
 
-Secure password hashing using bcrypt
+* Authenticated users can **create**, **delete**, and **retrieve** chirps
+* Filter chirps by `author_id` and sort by creation time (asc/desc)
 
-✍️ Chirps (Posts)
+### 🔁 Token Management
 
-Authenticated users can create, delete, and retrieve chirps
+* Auto-generate and validate JWT tokens
+* Refresh access tokens using refresh token endpoint
+* Revoke tokens to log out or invalidate sessions
 
-Filter chirps by author_id and sort by creation time (asc/desc)
+### 🧠 Webhook Integration
 
-🔁 Token Management
+* Handle third-party payment events (e.g., `user.upgraded`)
+* Upgrades user status with `is_chirpy_red = true`
 
-Auto-generate and validate JWT tokens
+### 🛠 Admin Utilities
 
-Refresh access tokens using refresh token endpoint
+* `POST /admin/reset`: Reset hit counter
+* Environment-based reset behavior (`PLATFORM=dev`)
 
-Revoke tokens to log out or invalidate sessions
+---
 
-🧠 Webhook Integration
+## API Endpoints
 
-Handle third-party payment events (e.g., user.upgraded)
+### User
 
-Upgrades user status with is_chirpy_red = true
+* `POST /api/users`: Register
+* `POST /api/login`: Login & receive tokens
+* `POST /api/refresh`: Refresh JWT using a refresh token
+* `POST /api/revoke`: Revoke a refresh token
+* `PUT /api/users`: Update password/email (planned)
 
-🛠 Admin Utilities
+### Chirps
 
-POST /admin/reset: Reset hit counter
+* `POST /api/chirps`: Create a chirp (requires valid JWT)
+* `GET /api/chirps`: Fetch all chirps or filter by `author_id`
+* `GET /api/chirps/{chirpID}`: Get single chirp
+* `DELETE /api/chirps/{chirpID}`: Delete your chirp
 
-Environment-based reset behavior (PLATFORM=dev)
+### Webhooks
 
-API Endpoints
+* `POST /api/polka/webhooks`: Handle payment upgrade events
 
-User
+### Admin
 
-POST /api/users: Register
+* `POST /admin/reset`: Reset visit counter (dev-only)
+* `GET /admin/metrics`: HTML metrics page
 
-POST /api/login: Login & receive tokens
+---
 
-POST /api/refresh: Refresh JWT using a refresh token
+## Database Schema
 
-POST /api/revoke: Revoke a refresh token
+### `users`
 
-PUT /api/users: Update password/email (planned)
+* `id UUID PRIMARY KEY`
+* `email TEXT UNIQUE`
+* `hashed_password TEXT`
+* `is_chirpy_red BOOLEAN`
+* `created_at`, `updated_at`
 
-Chirps
+### `chirps`
 
-POST /api/chirps: Create a chirp (requires valid JWT)
+* `id UUID PRIMARY KEY`
+* `user_id UUID REFERENCES users(id)`
+* `body TEXT`
+* `created_at`, `updated_at`
 
-GET /api/chirps: Fetch all chirps or filter by author_id
+### `refresh_tokens`
 
-GET /api/chirps/{chirpID}: Get single chirp
+* `token TEXT PRIMARY KEY`
+* `user_id UUID REFERENCES users(id)`
+* `created_at`, `updated_at`, `expires_at`, `revoked_at`
 
-DELETE /api/chirps/{chirpID}: Delete your chirp
+---
 
-Webhooks
+## Tech Stack
 
-POST /api/polka/webhooks: Handle payment upgrade events
+* **Go** (Golang)
+* **PostgreSQL** with `sqlc`
+* **bcrypt** for hashing
+* **JWT** for authentication
+* **Goose** for migrations
+* **Chi Router** for routing
 
-Admin
+---
 
-POST /admin/reset: Reset visit counter (dev-only)
+## How to Run
 
-GET /admin/metrics: HTML metrics page
-
-Database Schema
-
-users
-
-id UUID PRIMARY KEY
-
-email TEXT UNIQUE
-
-hashed_password TEXT
-
-is_chirpy_red BOOLEAN
-
-created_at, updated_at
-
-chirps
-
-id UUID PRIMARY KEY
-
-user_id UUID REFERENCES users(id)
-
-body TEXT
-
-created_at, updated_at
-
-refresh_tokens
-
-token TEXT PRIMARY KEY
-
-user_id UUID REFERENCES users(id)
-
-created_at, updated_at, expires_at, revoked_at
-
-Tech Stack
-
-Go (Golang)
-
-PostgreSQL with sqlc
-
-bcrypt for hashing
-
-JWT for authentication
-
-Goose for migrations
-
-Chi Router for routing
-
-How to Run
-
+```bash
 # 1. Set environment variables
 export JWT_SECRET="your_jwt_secret"
 export DB_URL="your_postgres_connection_url"
@@ -132,24 +113,31 @@ make migrateup
 
 # 3. Run the server
 go run .
+```
 
-Author
+---
 
-Asylbek ZhunusovBoot.dev Certified | Backend Developer | Curious Learner
+## Author
+
+**Asylbek Zhunusov**
+Boot.dev Certified | Backend Developer | Curious Learner
 
 Feel free to connect with me or check out more projects on my GitHub!
 
-License
+---
+
+## License
 
 This project is licensed under the MIT License.
 
-Notes
+---
 
-Make sure your .env file contains valid secrets and database connection strings.
+## Notes
 
-Tests can be executed using CLI-based test suites.
+* Make sure your `.env` file contains valid secrets and database connection strings.
+* Tests can be executed using CLI-based test suites.
+* Consider containerizing the app for production with Docker.
 
-Consider containerizing the app for production with Docker.
+---
 
 Happy Chipping! 🐦
-
